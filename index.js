@@ -21,6 +21,24 @@ async function run() {
   try {
    
     await client.connect();
+    const database = client.db("eatTogetherDB")
+    const foodCollection = database.collection("foods")
+    app.post('/foods' , async(req , res) => {
+      const food = req.body
+      const result = await foodCollection.insertOne(food)
+      res.send(result)
+    })
+    app.get('/foods' , async(req , res) => {
+     const cursor = foodCollection.find()
+     const foods = await cursor.toArray()
+     res.send(foods)
+    })
+    app.get('/foodByQuantity' , async(req , res) => {
+    
+    const foodsByQuantity = await foodCollection.find().sort({foodQuantity : -1}).limit(6).toArray()
+    res.send(foodsByQuantity)
+
+    } )
    
     await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
