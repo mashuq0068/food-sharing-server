@@ -7,7 +7,7 @@ app.use(cors())
 app.use(express.json())
 
 
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.hxdwxas.mongodb.net/?retryWrites=true&w=majority`;
 const client = new MongoClient(uri, {
   serverApi: {
@@ -32,6 +32,12 @@ async function run() {
      const cursor = foodCollection.find()
      const foods = await cursor.toArray()
      res.send(foods)
+    })
+    app.get('/foods/:id' , async(req , res) => {
+     const id = req.params.id
+     const query = {_id : new ObjectId(id)}
+     const food = await foodCollection.find(query).toArray()
+     res.send(food)
     })
     app.get('/foodByQuantity' , async(req , res) => {
     
