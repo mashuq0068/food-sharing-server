@@ -16,6 +16,22 @@ const client = new MongoClient(uri, {
     deprecationErrors: true,
   }
 });
+const verifyToken = async(req , res , next) =>{
+  const token  = req.cookies?.token
+  if(!token){
+    return res.status(401).send({message : "I am not seeing in token"})
+  }
+   jwt.verify(token ,  process.env.ACCESS_SECRET , (err , decoded)=>{
+    if(err){
+      return res.status(401).send({message:"Unauthorized Access"})
+    }
+    console.log(decoded)
+    req.user = decoded
+    next()
+  })
+
+
+}
 
 async function run() {
   try {
@@ -66,6 +82,7 @@ async function run() {
 
     })
     
+    
     app.get('/food/:id' , async(req , res) => {
      const id = req.params.id
      const query = {_id : new ObjectId(id)}
@@ -86,10 +103,48 @@ async function run() {
         const result = await requestCollection.insertOne(foodRequest)
         res.send(result)
     })
+    app.delete ('/foodRequest/:id' ,async(req , res) => {
+       const id = req.params.id
+       const query = {_id : new ObjectId (id)}
+       const result = await requestCollection.deleteOne(query)
+       res.send(result)
+
+    })
     app.get ('/foodRequest' ,async(req , res) => {
         const cursor = requestCollection.find()
         const result = await cursor.toArray()
         res.send(result)
+    })
+    app.post('/jwt' , async(req , res) => {
+      const user = req.body
+      console.log(user)
+      const token = jwt.sign(user , process.env.ACCESS_SECRET)
+      console.log(token)
+      res
+      .cookie("token" , token ,{
+       httpOnly:true,
+       secure:false
+      })
+      .send({success: true})
+
+      
+     
+
+  })
+    app.put('/foodRequest/:id' , async (req , res) => {
+      const id = req.params.id
+      const filter = {_id : new ObjectId(id)}
+      const options = { upsert: true };
+      const updatedFood = {
+        $set:{
+          
+          foodStatus:"Delivered",
+         
+          
+        }
+      }
+      const result = await requestCollection.updateOne(filter , updatedFood , options)
+      res.send(result)
     })
 
    
