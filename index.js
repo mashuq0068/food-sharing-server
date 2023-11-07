@@ -2,9 +2,19 @@ const express = require("express")
 const app = express()
 require ('dotenv').config()
 const cors = require("cors")
+const cookieParser = require('cookie-parser')
+const jwt = require('jsonwebtoken')
 const port = process.env.PORT || 5000
-app.use(cors())
+app.use(cors({
+  origin:[
+    'https://fir-practice-email-pass.web.app',
+     'https://fir-practice-email-pass.firebaseapp.com'
+    ],
+  credentials:true
+}
+))
 app.use(express.json())
+app.use(cookieParser())
 
 
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
@@ -19,7 +29,7 @@ const client = new MongoClient(uri, {
 const verifyToken = async(req , res , next) =>{
   const token  = req.cookies?.token
   if(!token){
-    return res.status(401).send({message : "I am not seeing in token"})
+    return res.status(401).send({message : "Unauthorized Access"})
   }
    jwt.verify(token ,  process.env.ACCESS_SECRET , (err , decoded)=>{
     if(err){
@@ -90,27 +100,27 @@ async function run() {
      res.send(food)
     })
     
-    app.get('/foodByQuantity' , async(req , res) => {
+    // app.get('/foodByQuantity' ,verifyToken, async(req , res) => {
     
-    const foodsByQuantity = await foodCollection.find().sort({foodQuantity : -1}).limit(6).toArray()
-    res.send(foodsByQuantity)
+    // const foodsByQuantity = await foodCollection.find().sort({foodQuantity : -1}).limit(6).toArray()
+    // res.send(foodsByQuantity)
 
-    } )
+    // } )
     
 
-    app.post ('/foodRequest' ,async(req , res) => {
+    app.post ('/foodRequest' , async(req , res) => {
         const foodRequest = req.body
         const result = await requestCollection.insertOne(foodRequest)
         res.send(result)
     })
-    app.delete ('/foodRequest/:id' ,async(req , res) => {
+    app.delete ('/foodRequest/:id', async(req , res) => {
        const id = req.params.id
        const query = {_id : new ObjectId (id)}
        const result = await requestCollection.deleteOne(query)
        res.send(result)
 
     })
-    app.get ('/foodRequest' ,async(req , res) => {
+    app.get ('/foodRequest' ,verifyToken, async(req , res) => {
         const cursor = requestCollection.find()
         const result = await cursor.toArray()
         res.send(result)
@@ -131,6 +141,12 @@ async function run() {
      
 
   })
+  app.post('/deleteToken' , async(req , res) => {
+    const user = req.body;
+
+    console.log('logging out', user);
+    res.clearCookie('token', { maxAge: 0 }).send({ successDelete: true })
+   })
     app.put('/foodRequest/:id' , async (req , res) => {
       const id = req.params.id
       const filter = {_id : new ObjectId(id)}
@@ -146,6 +162,7 @@ async function run() {
       const result = await requestCollection.updateOne(filter , updatedFood , options)
       res.send(result)
     })
+   
 
    
     await client.db("admin").command({ ping: 1 });
