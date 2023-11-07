@@ -100,12 +100,12 @@ async function run() {
      res.send(food)
     })
     
-    // app.get('/foodByQuantity' ,verifyToken, async(req , res) => {
+    app.get('/foodByQuantity' ,verifyToken, async(req , res) => {
     
-    // const foodsByQuantity = await foodCollection.find().sort({foodQuantity : -1}).limit(6).toArray()
-    // res.send(foodsByQuantity)
+    const foodsByQuantity = await foodCollection.find().sort({foodQuantity : -1}).limit(6).toArray()
+    res.send(foodsByQuantity)
 
-    // } )
+    } )
     
 
     app.post ('/foodRequest' , async(req , res) => {
