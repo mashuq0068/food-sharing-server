@@ -6,13 +6,13 @@ const cookieParser = require('cookie-parser')
 const jwt = require('jsonwebtoken')
 const port = process.env.PORT || 5000
 app.use(cors({
-  origin:[
+  origin :[
+    'http://localhost:5173',
     'https://fir-practice-email-pass.web.app',
-     'https://fir-practice-email-pass.firebaseapp.com'
-    ],
+    'https://fir-practice-email-pass.firebaseapp.com'
+  ],
   credentials:true
-}
-))
+}))
 app.use(express.json())
 app.use(cookieParser())
 
@@ -46,11 +46,11 @@ const verifyToken = async(req , res , next) =>{
 async function run() {
   try {
    
-    await client.connect();
+  
     const database = client.db("eatTogetherDB")
     const foodCollection = database.collection("foods")
     const requestCollection = database.collection("foodRequests")
-    app.post('/foods' , async(req , res) => {
+    app.post('/foods' ,verifyToken, async(req , res) => {
       const food = req.body
       const result = await foodCollection.insertOne(food)
       res.send(result)
@@ -60,14 +60,14 @@ async function run() {
      const foods = await cursor.toArray()
      res.send(foods)
     })
-    app.delete('/foods/:id' , async(req , res) => {
+    app.delete('/foods/:id' ,verifyToken, async(req , res) => {
       const id = req.params.id
       const query = {_id : new ObjectId(id)}
       const result = await foodCollection.deleteOne(query)
       res.send(result)
     
     })
-    app.patch('/foods/:id' , async(req , res) => {
+    app.patch('/foods/:id' ,verifyToken, async(req , res) => {
       const id = req.params.id
       const food = req.body
       const filter = {_id : new ObjectId(id)}
@@ -93,7 +93,7 @@ async function run() {
     })
     
     
-    app.get('/food/:id' , async(req , res) => {
+    app.get('/food/:id' ,verifyToken, async(req , res) => {
      const id = req.params.id
      const query = {_id : new ObjectId(id)}
      const food = await foodCollection.find(query).toArray()
@@ -108,12 +108,12 @@ async function run() {
     // } )
     
 
-    app.post ('/foodRequest' , async(req , res) => {
+    app.post ('/foodRequest' ,verifyToken,  async(req , res) => {
         const foodRequest = req.body
         const result = await requestCollection.insertOne(foodRequest)
         res.send(result)
     })
-    app.delete ('/foodRequest/:id', async(req , res) => {
+    app.delete ('/foodRequest/:id',verifyToken, async(req , res) => {
        const id = req.params.id
        const query = {_id : new ObjectId (id)}
        const result = await requestCollection.deleteOne(query)
@@ -133,7 +133,8 @@ async function run() {
       res
       .cookie("token" , token ,{
        httpOnly:true,
-       secure:false
+       secure:true,
+       sameSite:'none'
       })
       .send({success: true})
 
@@ -141,13 +142,14 @@ async function run() {
      
 
   })
-  app.post('/deleteToken' , async(req , res) => {
+  app.post('/deleteToken' ,verifyToken, async(req , res) => {
     const user = req.body;
 
     console.log('logging out', user);
-    res.clearCookie('token', { maxAge: 0 }).send({ successDelete: true })
+    res.clearCookie('token', { maxAge: 0  ,secure:true,
+      sameSite:'none' }).send({ successDelete: true })
    })
-    app.put('/foodRequest/:id' , async (req , res) => {
+    app.put('/foodRequest/:id' ,verifyToken, async (req , res) => {
       const id = req.params.id
       const filter = {_id : new ObjectId(id)}
       const options = { upsert: true };
@@ -165,8 +167,7 @@ async function run() {
    
 
    
-    await client.db("admin").command({ ping: 1 });
-    console.log("Pinged your deployment. You successfully connected to MongoDB!");
+    
   } finally {
    
     // await client.close();
